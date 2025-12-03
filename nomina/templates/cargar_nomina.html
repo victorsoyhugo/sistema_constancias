@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Cargar Nómina{% endblock %}
+
+{% block content %}
+<h2>Cargar Nómina</h2>
+
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+
+  <div class="grid">
+    <button type="submit" name="modo" value="nueva">Cargar Nueva Nómina</button>
+    {% if tiene_cargas %}
+      <button type="submit" name="modo" value="modificar" class="secondary">Modificar Última Carga</button>
+    {% else %}
+      <button type="button" disabled>Modificar Última Carga</button>
+    {% endif %}
+  </div>
+</form>
+
+{% for message in messages %}
+  <div class="{% if message.tags == 'success' %}success{% else %}error{% endif %}">
+    {{ message }}
+  </div>
+{% endfor %}
+{% endblock %}

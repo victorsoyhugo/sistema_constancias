@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+body { font-family: 'Helvetica', sans-serif; margin: 40px; }
+table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+td, th { border: 1px solid #999; padding: 6px; }
+footer { position: fixed; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 0.8em; color: #555; }
+</style>
+</head>
+<body>
+<h2 style="text-align:center;">RECIBO DE PAGO</h2>
+<p><strong>Empleado:</strong> {{ empleado.nombres_y_apellidos }} (C.I. {{ empleado.cedula }})</p>
+<p><strong>Periodo:</strong> {% if quincena.periodo == 1 %}1era{% else %}2da{% endif %} QNA - {{ quincena.get_mes_display }} {{ quincena.ano }}</p>
+
+<h4>Asignaciones</h4>
+<table>
+  <tr><th>Concepto</th><th>Monto (Bs.)</th></tr>
+  <tr><td>Sueldo Base</td><td>{{ asignacion.sueldo_base_quincenal }}</td></tr>
+  <tr><td>Prima</td><td>{{ asignacion.prima_de_profesionalizacion_quincenal }}</td></tr>
+  <tr><td>Total</td><td>{{ asignacion.total }}</td></tr>
+</table>
+
+<h4>Deducciones</h4>
+<table>
+  <tr><th>Concepto</th><th>Monto (Bs.)</th></tr>
+  <tr><td>Retención</td><td>{{ deducciones.retencion }}</td></tr>
+  <tr><td>Total</td><td>{{ deducciones.total }}</td></tr>
+</table>
+
+<footer>
+  Código de verificación: {{ codigo_pdf }}<br>
+  Generado el {{ fecha_generacion }}<br>
+  Verificable en https://tusistema.com/
+</footer>
+</body>
+</html>

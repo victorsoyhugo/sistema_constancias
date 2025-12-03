@@ -1,0 +1,178 @@
+/* Estilos generales para la constancia */
+.constancia-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+    padding: 10px;
+}
+
+.banner {
+    width: 100%;
+    max-width: 1000px;
+    display: block;
+    margin: 0 auto 5px;
+}
+
+.constancia-header {
+    text-align: justify;
+    margin: 5px 0;
+}
+
+.constancia-header h1 {
+    font-size: 18px;
+    margin: 5px 0;
+    text-transform: uppercase;
+}
+
+.constancia-content {
+    margin: 10px 0;
+    font-size: 14px;
+    text-align: justify;
+}
+
+/* ===== Tabla de Remuneración (versión corregida) ===== */
+
+.remuneracion-table {
+    width: 60%;
+    border-collapse: collapse;
+
+    /* Alinear tabla a la derecha (WeasyPrint-friendly) */
+    margin-left: auto;
+    margin-right: auto;
+
+    margin-top: 20px;
+    font-size: 13px;
+    text-align: center;
+}
+
+/* Borde más grueso */
+.remuneracion-table td,
+.remuneracion-table th {
+    padding: 8px;
+    border: 2px solid #000;   /* ← Grosor */
+}
+
+/* Primera columna más ancha */
+.remuneracion-table td:first-child {
+    width: 55%;
+}
+
+/* Fila total */
+.remuneracion-table .total-row {
+    font-weight: bold;
+    background-color: #f5f5f5;
+}
+
+.remuneracion-table .total-row {
+    font-weight: bold;
+    background-color: #f5f5f5;
+}
+
+.remuneracion-table td:first-child {
+    width: 55%; 
+}
+
+.firma-section {
+    margin: 5px 0;
+    text-align: center;
+    line-height: 0.6;
+}
+
+.firma-section img {
+    height: 50px;
+    margin: 5px 0;
+}
+
+.firma-section .firma {
+    margin-top: 5px; 
+}
+
+.nota {
+    font-size: 12px;
+    margin-top: 5px;
+    border-top: 1px solid #c7c0c0;
+    padding-top: 10px;
+}
+
+.constancia-actions {
+    margin: 5px 0;
+    text-align: center;
+}
+
+/* Estilos específicos para impresión */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12pt;
+    }
+    
+    .constancia-container {
+        width: 97% !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        max-width: none !important;
+    }
+    
+    .banner {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    .constancia-content {
+        page-break-inside: avoid;
+    }
+    
+    /* Evita que la tabla se divida en páginas */
+    .remuneracion-table {
+        page-break-inside: avoid;
+    }
+}
+
+
+.admin-upload {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.user-dashboard {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+.user-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+}

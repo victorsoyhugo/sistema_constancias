@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}FUNDABIT - Nómina{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/pico.min.css' %}"" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul>
+        <li><strong>FUNDABIT</strong></li>
+      </ul>
+      <ul>
+        <li><a href="{% url 'nomina:home' %}">Inicio</a></li>
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'nomina:panel_admin' %}">Panel Admin</a></li>
+          <li><a href="{% url 'nomina:logout' %}" class="contrast">Cerrar sesión</a></li>
+        {% else %}
+          <li><a href="{% url 'nomina:login' %}" class="contrast">Acceso Admin</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="container">
+    <small>&copy; {{ now|date:"Y" }} FUNDABIT - Sistema de Nómina</small>
+  </footer>
+</body>
+</html>

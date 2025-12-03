@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Panel Administrativo{% endblock %}
+
+{% block content %}
+<h2>Panel Administrativo</h2>
+
+<form method="GET">
+  <label for="quincena">Seleccionar quincena:</label>
+  <select name="quincena" id="quincena" onchange="this.form.submit()">
+    <option value="">-- Seleccione --</option>
+    {% for q in quincenas %}
+      <option value="{{ q.periodo }}-{{ q.mes }}-{{ q.ano }}">
+        {% if q.periodo == 1 %}1era{% else %}2da{% endif %}
+        QNA de {{ q.mes }}/{{ q.ano }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if empleados %}
+<table>
+  <thead>
+    <tr>
+      <th>Cédula</th>
+      <th>Nombre</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for q in empleados %}
+      <tr>
+        <td>{{ q.empleado.cedula }}</td>
+        <td>{{ q.empleado.nombres_y_apellidos }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No hay registros para la quincena seleccionada.</p>
+{% endif %}
+
+<hr>
+<div style="text-align:center;">
+  <a href="{% url 'nomina:cargar_nomina' %}" role="button">Cargar Nómina</a>
+</div>
+{% endblock %}
