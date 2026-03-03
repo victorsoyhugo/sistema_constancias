@@ -18,4 +18,29 @@ urlpatterns = [
     path("panel_admin/", views.panel_admin, name="panel_admin"),
     
     path("cargar-nomina/", views.cargar_nomina_view, name="cargar_nomina"),
+    
+    path(
+        "nomina/quincena/<int:quincena_id>/editar/<str:seccion>/",
+        views.editar_asignaciones,
+        name="editar_asignaciones"
+    ),
+    
+    path(
+        "nomina/quincena/<int:quincena_id>/guardar/<str:seccion>/",
+        views.guardar_asignaciones,
+        name="guardar_asignaciones"
+    ),
+
+    path(
+        "nomina/quincena/<int:quincena_id>/agregar-extra/<str:seccion>/",
+        views.agregar_concepto_extra,
+        name="agregar_concepto_extra"
+    ),
+
+    
+    path(
+        "quincena/confirmar-eliminacion/",
+        views.confirmar_eliminacion,
+        name="confirmar_eliminacion",
+    ),
 ]

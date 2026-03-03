@@ -1,4 +1,42 @@
-/* Estilos generales para la constancia */
+/* ======= COLOR SCHEME ======= */
+
+:root {
+    color-scheme: light !important;
+  }
+
+/* ======= BODY HTML======= */
+.logo-nav {
+  height: 3.5em;   /* ← se adapta al tamaño del texto del nav */
+  width: auto;
+  display: block;
+}
+
+header nav ul li {
+  display: flex;
+  align-items: center;
+}
+
+body:not(.pdf) {
+  background-image: url("../img/fondo.png");
+  background-size: cover;        /* ocupa toda la pantalla */
+  background-position: center;   /* centrado */
+  background-repeat: no-repeat;  /* evita mosaico */
+  background-attachment: fixed;  /* efecto moderno */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+html, body {
+  height: 100%;
+}
+
+main {
+  flex: 1;
+}
+
+
+/* ======= CONTENEDOR PDF======= */
 .constancia-container {
     width: 100%;
     max-width: 800px;
@@ -6,18 +44,31 @@
     font-family: Arial, sans-serif;
     line-height: 1.5;
     padding: 10px;
+    min-height: 100vh;
+    position: relative;
+    display: block;
 }
 
 .banner {
     width: 100%;
-    max-width: 1000px;
+    max-width: 100px;
     display: block;
-    margin: 0 auto 5px;
+    margin: 0 auto -10px;
+    margin-top: -20px;
 }
 
+.banner-inferior {
+    width: 100%;
+    max-width: 100px;
+    display: block;
+    margin: 0 auto 15px;
+}
+
+/* ======= CABECERA ======= */
 .constancia-header {
     text-align: justify;
     margin: 5px 0;
+    
 }
 
 .constancia-header h1 {
@@ -27,57 +78,62 @@
 }
 
 .constancia-content {
-    margin: 10px 0;
+    margin: 0px 0;
     font-size: 14px;
     text-align: justify;
 }
 
-/* ===== Tabla de Remuneración (versión corregida) ===== */
+/* ======= TABLA CONTENEDOR ======= */
+.table-container {
+    display: block;
+    width: 100%;
+    margin: 15px 0;
+}
 
+/* ======= TABLA ======= */
 .remuneracion-table {
-    width: 60%;
+    width: 90%;
     border-collapse: collapse;
-
-    /* Alinear tabla a la derecha (WeasyPrint-friendly) */
-    margin-left: auto;
-    margin-right: auto;
-
-    margin-top: 20px;
+    margin: 10px auto;
     font-size: 13px;
     text-align: center;
+    table-layout: auto;
 }
 
-/* Borde más grueso */
 .remuneracion-table td,
 .remuneracion-table th {
+    border: 2px solid #000;
     padding: 8px;
-    border: 2px solid #000;   /* ← Grosor */
+    white-space: nowrap !important;
+    overflow: visible !important;
 }
 
-/* Primera columna más ancha */
-.remuneracion-table td:first-child {
-    width: 55%;
+.remuneracion-table td:first-child,
+.remuneracion-table th:first-child {
+    width: auto !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    max-width: none !important;
 }
 
-/* Fila total */
-.remuneracion-table .total-row {
+.remuneracion-table td:nth-child(2)
+.remuneracion-table th:nth-child(2) {
+    width: 30%;
+    white-space: nowrap !important;
+    text-align: center !important;
+}
+
+.total-row {
     font-weight: bold;
     background-color: #f5f5f5;
 }
 
-.remuneracion-table .total-row {
-    font-weight: bold;
-    background-color: #f5f5f5;
-}
-
-.remuneracion-table td:first-child {
-    width: 55%; 
-}
-
+/* ======= FIRMA ======= */
 .firma-section {
     margin: 5px 0;
     text-align: center;
     line-height: 0.6;
+    font-size: 12px;
 }
 
 .firma-section img {
@@ -85,10 +141,7 @@
     margin: 5px 0;
 }
 
-.firma-section .firma {
-    margin-top: 5px; 
-}
-
+/* ======= NOTA ======= */
 .nota {
     font-size: 12px;
     margin-top: 5px;
@@ -96,83 +149,132 @@
     padding-top: 10px;
 }
 
-.constancia-actions {
-    margin: 5px 0;
-    text-align: center;
+/* ======= FOOTER FIJO ======= */
+.footer-fixed {
+    position: fixed;
+    bottom: -20px;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+    page-break-inside: avoid;
 }
 
-/* Estilos específicos para impresión */
-@media print {
-    .no-print {
-        display: none !important;
-    }
-    
+/* ======= IMPRESIÓN ======= */
     body {
         margin: 0 !important;
         padding: 0 !important;
         font-size: 12pt;
     }
-    
+
     .constancia-container {
         width: 97% !important;
         margin: 0 !important;
-        padding: 10px !important;
-        max-width: none !important;
+        padding: 0 !important;
     }
-    
+
     .banner {
         max-width: 100% !important;
         height: auto !important;
     }
-    
+
+    .banner-inferior {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
     .constancia-content {
         page-break-inside: avoid;
     }
-    
-    /* Evita que la tabla se divida en páginas */
+
     .remuneracion-table {
-        page-break-inside: avoid;
+        width: 80% !important;
+        table-layout: auto !important;
+        margin: 25px auto !important;
+        page-break-inside: avoid !important;
+    }
+
+    .remuneracion-table td, 
+    .remuneracion-table th {
+        white-space: nowrap !important;
+        overflow: visible !important;
+    }
+
+    .remuneracion-table td:first-child {
+        min-width: 220px !important;
+        max-width: 300px !important;
+        table-layout: auto !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    .remuneracion-table td:nth-child(2) {
+        width: 120px !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+    }
+
+    .footer-fixed {
+        position: fixed !important;
+        bottom: -50px !important;
+    }
+
+/* ======= UI (Pico overrides) ======= */
+a[role="button"].btn-compact {
+    padding: 0.50rem 0.85rem;
+    line-height: 1.1;
+    font-size: 0.95rem;
+}
+
+/* ======= Modal (Cargar Nómina) como <dialog> ======= */
+dialog.modal {
+    border: none;
+    padding: 0;
+    background: transparent;
+    max-width: 100%;
+}
+
+dialog.modal::backdrop {
+    background: rgba(15, 18, 23, 0.60);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    width: min(560px, 100% - 2rem);
+    margin: auto;
+    background: var(--pico-card-background-color, #ffffff);
+    color: var(--pico-color, #111827);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.15rem 1.15rem 1rem;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    transform: translateY(0);
+    animation: modal-in 140ms ease-out;
+}
+
+.modal-content p {
+    margin: 0 0 0.85rem 0;
+    font-size: 1.05rem;
+    line-height: 1.4;
+}
+
+.modal-content .grid {
+    gap: 0.75rem;
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
-
-.admin-upload {
-    max-width: 600px;
-    margin: 2rem auto;
-    padding: 2rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.alert {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-}
-
-.alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.user-dashboard {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-}
-
-.user-info {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-}
-
-.actions {
-    display: flex;
-    gap: 1rem;
+@media (prefers-reduced-motion: reduce) {
+    .modal-content {
+        animation: none;
+    }
 }

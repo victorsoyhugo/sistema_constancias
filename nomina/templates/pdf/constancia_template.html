@@ -5,63 +5,107 @@
   <meta charset="utf-8">
   <title>Constancia de Trabajo</title>
   <link rel="stylesheet" href="{% static 'style.css' %}">
+
+  <!-- Estilos dinámicos generados desde Python -->
+  <style>
+    {{ estilos_tabla|safe }}
+  </style>
 </head>
-<body>
-  <div class="constancia-container">
-    <img src="{% static 'img/banner-superior.png' %}" alt="Banner Superior" class="banner">
-    <div class="constancia-header">
-      <p style="text-align: right;">RIF-89283048</p>
-      <h1 style="text-align:center;">CONSTANCIA DE TRABAJO</h1>
+
+<body class="pdf">
+    <div class="constancia-container">
+
+        <!-- Banner superior -->
+        <img src="{% static 'img/banner-superior.png' %}" alt="Banner Superior" class="banner">
+
+        <!-- CONTENIDO -->
+        <div class="content-wrapper">
+
+            <!-- Encabezado -->
+            <div class="constancia-header">
+                <p style="text-align: right;">RIF. N° G-20003142-5</p>
+                <h1 style="text-align:center;">CONSTANCIA DE TRABAJO</h1>
+            </div>
+
+            <!-- Cuerpo del texto -->
+            <div class="constancia-content">
+                <p>
+                    Quien suscribe, <strong>ELIANNA MATOS</strong>, titular de la cédula de identidad N° 12.395.234,
+                    en su carácter de DIRECTOR (A) de la DIRECCIÓN DE TALENTO HUMANO de la Fundación Bolivariana de
+                    Informática y Telemática (FUNDABIT), hace constar que el/la ciudadano(a)
+                    <strong>{{ empleado.nombres_y_apellidos }}</strong>, titular de la cédula de identidad N°
+                    <strong>{{ empleado.cedula }}</strong>, presta sus servicios en esta fundación desde
+                    <strong>{{ empleado.fecha_de_ingreso|date:"d/m/Y" }}</strong>, ejerciendo actualmente el cargo de
+                    <strong>{{ empleado.cargo }}</strong> en la <strong>{{ empleado.unidad_de_adscripcion_y_o_direccion }}</strong>, devengando una remuneración mensual que se detalla a
+                    continuación:
+                </p>
+
+                <!-- TABLA DE REMUNERACIÓN -->
+                <div class="table-container">
+                    <table class="remuneracion-table {{ clase_tabla }}">
+
+                        <tr><td>SUELDO BÁSICO</td><td>{{ asignacion.sueldo_base_mensual|floatformat:2 }}</td></tr>
+                        <tr><td>PRIMA POR HIJOS</td><td>{{ asignacion.prima_por_hijos|floatformat:2 }}</td></tr>
+                        <tr><td>PRIMA DE PROFESIONALIZACIÓN</td><td>{{ asignacion.prima_de_profesionalizacion|floatformat:2 }}</td></tr>
+                        <tr><td>PRIMA DE ANTIGÜEDAD</td><td>{{ asignacion.prima_de_antiguedad|floatformat:2 }}</td></tr>
+                        <tr><td>PRIMA DE ASISTENCIA Y HOGAR</td><td>{{ asignacion.prima_asistencial_y_del_hogar|default:"0.00"|floatformat:2 }}</td></tr>
+                        <tr><td>PRIMA TRABAJADORES ADM Y OBR</td><td>{{ asignacion.prima_trabajadores_adm_y_obr|default:"0.00"|floatformat:2 }}</td></tr>
+                        
+                        {% for item in campos_validos %}
+                            <tr>
+                                <td>{{ item.nombre }}</td>
+                                <td>{{ item.valor|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+
+                        {% if adicionales %}
+                            {% for extra in adicionales %}
+                                <tr>
+                                    <td>{{ extra.nombre }}</td>
+                                    <td>{{ extra.valor|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+
+                        <tr class="total-row">
+                            <td><strong>Total Mensual</strong></td>
+                            <td><strong>{{ quincena.total_asignacion_mensual_todos_los_conceptos|floatformat:2 }}</strong></td>
+                        </tr>
+
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- FOOTER FIJO -->
+            <div class="footer-fixed">
+
+                <p>
+                    Adicionalmente, el/la trabajador(a) antes mencionado(a) percibe mensualmente por concepto de
+                    Bono de Alimentación, un monto de
+                    <strong>{{ quincena.bono_alimenticio|default:"0.00"|floatformat:2 }}</strong>.
+                </p>
+
+                <p class="nota-bono">
+                    Constancia que se expide a petición de parte interesada en Caracas, a los {{ fecha_generacion_formateada }}.
+                </p>
+
+                <div class="firma-section">
+                    <img src="{% static 'img/firma-director.png' %}" alt="Firma" class="firma">
+                    <p><strong style="font-size: 15px">Elianna Matos</strong></p>
+                    <p>Director (a) Talento Humano FUNDABIT</p>
+                    <p>Nombramiento N° 0051 de fecha 01/01/2025</p>
+                </div>
+
+                <div class="nota">
+                    <p>Nota: Esta constancia tiene vigencia de dos (02) meses. Para verificar esta información comunicarse con la Oficina de Talento Humano, edificio del Ministerio del Poder Popular para la Educación, piso 13, Teléfonos: 0212-506-8874</p>
+                    <p><strong>Código de verificación:</strong> {{ codigo_pdf }}</p>
+                </div>
+
+                <img src="{% static 'img/banner-inferior.png' %}" alt="Banner Inferior" class="banner-inferior">
+
+            </div>
+        </div>
     </div>
-
-    <div class="constancia-content">
-        <p>
-            Quien suscribe, <strong>ELIANNA MATOS</strong>, titular de la cédula de identidad N° 12.395.234, en su carácter de DIRECTOR (A) de la
-            DIRECCIÓN DE TALENTO HUMANO de la Fundación Bolivariana de Informática y Telemática (FUNDABIT), hace constar
-            que el/la ciudadano(a) <strong>{{ empleado.nombres_y_apellidos }}</strong>, titular de la cédula de identidad N° 
-            <strong>{{ empleado.cedula }}</strong>, presta sus servicios en esta fundación desde 
-            <strong>{{ empleado.fecha_de_ingreso|date:"d/m/Y" }}</strong>, ejerciendo actualmente el cargo de 
-            <strong>{{ empleado.cargo }}</strong>, devengando una remuneración mensual que se detalla de la siguiente manera:
-        </p>
-
-      <table class="remuneracion-table">
-        <tr><td>SUELDO BÁSICO</td><td>{{ asignacion.sueldo_base_mensual|floatformat:2 }}</td></tr>
-        <tr><td>PRIMA POR HIJOS</td><td>{{ asignacion.prima_por_hijos|floatformat:2 }}</td></tr>
-        <tr><td>PRIMA DE PROFESIONALIZACIÓN</td><td>{{ asignacion.prima_de_profesionalizacion|floatformat:2 }}</td></tr>
-        <tr><td>PRIMA DE ANTIGÜEDAD</td><td>{{ asignacion.prima_de_antiguedad|floatformat:2 }}</td></tr>
-        <tr><td>PRIMA DE ASISTENCIA Y HOGAR</td><td>{{ asignacion.prima_asistencial_y_del_hogar|default:"0.00"|floatformat:2 }}</td></tr>
-        <tr><td>PRIMA TRABAJADORES ADM Y OBR</td><td>{{ asignacion.prima_trabajadores_adm_y_obr|default:"0.00"|floatformat:2 }}</td></tr>
-        <tr class="total-row">
-            <td><strong>Total Mensual</strong></td>
-            <td><strong>
-                {{ quincena.total_asignacion_mensual_todos_los_conceptos|floatformat:2 }}
-            </strong></td>
-        </tr>
-      </table>
-
-    <p>
-        Adicionalmente, el/la trabajador(a) antes mencionado(a) percibe mensualmente por concepto de Bono de Alimentación, un monto de 
-        <strong>{{ quincena.bono_alimenticio|default:"0.00"|floatformat:2 }}</strong>.
-    </p>
-    
-    <p>
-        Constancia que se expide a petición de parte interesada en Caracas, a los <strong>{{ fecha_generacion }}</strong>.
-    </p>
-
-      <div class="firma-section">
-        <p>Elianna Matos</p>
-        <img src="{% static 'images/firma-director.png' %}" alt="Firma" class="firma">
-        <p>Director (a) Talento Humano FUNDABIT</p>
-      </div>
-
-      <div class="nota">
-        <p>Nota: Vigencia: dos (02) meses.</p>
-        <p><strong>Código de verificación:</strong> {{ codigo_pdf }}</p>
-      </div>
-    </div>
-
-    <img src="{% static 'img/banner-inferior.png' %}" alt="Banner Inferior" class="banner">
-
-  </div>
 </body>
 </html>

@@ -1,0 +1,76 @@
+<form
+  method="post"
+  action="{% url 'nomina:guardar_asignaciones' quincena_id seccion %}"
+  class="ajax-form"
+>
+  {% csrf_token %}
+
+  {% for field in form %}
+    <label>
+      {{ field.label }}
+      {{ field }}
+      {{ field.errors }}
+    </label>
+  {% endfor %}
+
+{# 🔥 SIEMPRE renderizar management_form #}
+  {{ formset.management_form }}
+
+  <hr>
+
+  <div style="
+    display:grid;
+    grid-template-columns: 1fr auto;
+    align-items:center;
+    gap:1rem;
+  ">
+    <div>
+      <strong style="margin:0; font-size:20px; display:flex; align-items:center; padding-bottom: 30px;">
+        Conceptos adicionales
+      </strong>
+    </div>
+
+    <button
+      type="button"
+      class="btn-cyan"
+      onclick="abrirModalConcepto('{{ quincena_id }}', '{{ seccion }}')"
+      style="padding: 0.40rem 0.75rem;"
+    >
+      + Agregar concepto
+    </button>
+  </div>
+
+  {# 🔹 SOLO iterar si existen forms #}
+  {% if formset and formset.forms %}
+    {% for f in formset %}
+      {{ f.id }}
+
+      <div style="
+        display:grid;
+        grid-template-columns: 1fr auto;
+        gap:0.5rem;
+        align-items:end;
+      ">
+        
+        <label style="margin:0;">
+          {{ f.instance.nombre }}
+          {{ f.valor }}
+          {{ f.valor.errors }}
+        </label>
+
+        <button
+          type="button"
+          class="secondary outline"
+          onclick="marcarEliminarConcepto(this)"
+        >
+          −
+        </button>
+
+        <div style="display:none;">
+          {{ f.DELETE }}
+        </div>
+
+      </div>
+    {% endfor %}
+  {% endif %}
+</form>

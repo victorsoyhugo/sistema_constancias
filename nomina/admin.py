@@ -13,6 +13,7 @@ from .models import (
     AsignacionAdicionalQuincenal,
     AsignacionAdicionalMensual,
     DeduccionAdicional,
+    CodigoPDF,
 )
 
 
@@ -103,6 +104,7 @@ class QuincenaAdmin(admin.ModelAdmin):
         "ano",
         "fecha",
         "total_a_cancelar",
+        "is_deleted"
     )
     list_filter = ("mes", "ano")
     search_fields = ("empleado__nombres_y_apellidos", "empleado__cedula")
@@ -169,3 +171,9 @@ class DeduccionAdicionalAdmin(admin.ModelAdmin):
     list_display = ("id", "nombre", "valor")
     search_fields = ("nombre",)
     ordering = ("nombre",)
+
+@admin.register(CodigoPDF)
+class CodigoPDFAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "quincena", "empleado", "tipo", "creado_en")
+    search_fields = ("empleado",)
+    ordering = ("creado_en",)

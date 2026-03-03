@@ -2,7 +2,12 @@
 {% block title %}Panel Administrativo{% endblock %}
 
 {% block content %}
-<h2>Panel Administrativo</h2>
+<div style="display: flex; align-items: center; justify-content: space-between;">
+  <h2 style="margin: 20;">Panel Administrativo</h2>
+  <a href="{% url 'nomina:cargar_nomina' %}" role="button" class="btn-compact">Cargar por Lotes</a>
+</div>
+
+{% load meses %}
 
 <form method="GET">
   <label for="quincena">Seleccionar quincena:</label>
@@ -11,35 +16,667 @@
     {% for q in quincenas %}
       <option value="{{ q.periodo }}-{{ q.mes }}-{{ q.ano }}">
         {% if q.periodo == 1 %}1era{% else %}2da{% endif %}
-        QNA de {{ q.mes }}/{{ q.ano }}
+        Quincena de {{ q.mes|nombre_mes }} de {{ q.ano }}
       </option>
     {% endfor %}
   </select>
 </form>
 
+{% if texto_quincena %}
+  <p style="margin-top:0; font-weight:500; font-size:20px">
+    Quincena seleccionada:
+    <strong>{{ texto_quincena }}</strong>
+  </p>
+{% endif %}
+
+<style>
+      figure table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--pico-background-color);
+      z-index: 1;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .tabs button {
+      border: none;
+      background: var(--pico-muted-border-color);
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    
+    .tabs button.active {
+      background: var(--pico-primary-background);
+      color: white;
+    }
+    
+    .modal-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+    }
+    
+    .close-button {
+      position: absolute;
+      top: 17px;
+      right: 20px;
+      background: var(--pico-background-red-500);
+      border: 1px solid var(--pico-color-red-500);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      line-height: 1;
+    }
+    
+    .close-button:hover {
+      opacity: 0.7;
+      background-color: var(--pico-color-red-700);
+      border-color: var(--pico-color-red-700);
+    }
+
+    .close-button:active {
+      background-color: var(--pico-color-red-850);
+      border-color: var(--pico-color-red-850);
+    }
+
+    .close-button:focus,
+    .close-button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--pico-color-red-800);
+    }
+
+    .btn-danger {
+      background-color: var(--pico-color-red-500);
+      border-color: var(--pico-color-red-500);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: var(--pico-color-red-700);
+      border-color: var(--pico-color-red-700);
+    }
+    
+    .btn-danger:active {
+      background-color: var(--pico-color-red-850);
+      border-color: var(--pico-color-red-850);
+    }
+    
+    .btn-danger:focus,
+    .btn-danger:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--pico-color-red-800);
+    }
+
+    .btn-save {
+      background-color: var(--pico-color-green-500);
+      border-color: var(--pico-color-green-500);
+      color: white;
+    }
+    
+    .btn-save:hover {
+      background-color: var(--pico-color-green-700);
+      border-color: var(--pico-color-green-700);
+    }
+    
+    .btn-save:active {
+      background-color: var(--pico-color-green-850);
+      border-color: var(--pico-color-green-850);
+    }
+    
+    .btn-save:focus,
+    .btn-save:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--pico-color-green-800);
+    }
+
+    .btn-cyan {
+      background-color: var(--pico-color-cyan-500);
+      border-color: var(--pico-color-cyan-500);
+      color: white;
+    }
+    
+    .btn-cyan:hover {
+      background-color: var(--pico-color-cyan-700);
+      border-color: var(--pico-color-cyan-700);
+    }
+    
+    .btn-cyan:active {
+      background-color: var(--pico-color-cyan-850);
+      border-color: var(--pico-color-cyan-850);
+    }
+    
+    .btn-cyan:focus,
+    .btn-cyan:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--pico-color-cyan-800);
+    }
+</style>
+
 {% if empleados %}
-<table>
-  <thead>
-    <tr>
-      <th>Cédula</th>
-      <th>Nombre</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for q in empleados %}
+
+  <input
+  type="search"
+  id="busqueda-empleado"
+  placeholder="Buscar por nombre o cédula…"
+  aria-label="Buscar empleado"
+>
+
+<figure style="max-height: 400px; overflow-y: auto;">
+  <table role="grid">
+    <thead>
       <tr>
+        <th scope="col">Cédula</th>
+        <th scope="col">Empleado</th>
+        <th scope="col">Cargo</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody id="tabla-empleados">
+      {% for q in empleados %}
+      <tr
+        data-cedula="{{ q.empleado.cedula }}"
+        data-nombre="{{ q.empleado.nombres_y_apellidos|lower }}"
+        data-cargo="{{ q.empleado.cargo|lower }}"
+      >
         <td>{{ q.empleado.cedula }}</td>
         <td>{{ q.empleado.nombres_y_apellidos }}</td>
+        <td>{{ q.empleado.cargo }}</td>
+        <td>
+          <button
+          type="button"
+          class="secondary outline"
+          onclick="abrirModal('{{ q.id }}')"
+        >
+          ✏️
+        </button>
+
+          <button
+          type="button"
+          class="secondary outline"
+          onclick="marcarParaEliminar('{{ q.id }}', this)"
+        >
+          🗑
+        </button>
+          </td>
       </tr>
-    {% endfor %}
-  </tbody>
-</table>
+      {% endfor %}
+    </tbody>
+  </table>
+</figure>
+
 {% else %}
 <p>No hay registros para la quincena seleccionada.</p>
 {% endif %}
 
 <hr>
+
+
 <div style="text-align:center;">
-  <a href="{% url 'nomina:cargar_nomina' %}" role="button">Cargar Nómina</a>
+  <button
+  id="confirmar-cambios"
+  class="btn-danger"
+  hidden
+  onclick="mostrarResumen()"
+  >Eliminar (0)
+  </button>
 </div>
+
+<dialog id="modal">
+  <article class="modal-article" style="min-width: 700px">
+    <header class="modal-header">
+      <h3>Editar quincena</h3>
+
+      <button
+        type="button"
+        class="close-button"
+        aria-label="Cerrar"
+        onclick="cerrarModal()"
+        style="background-color: var(--pico-color-red-500); border: var(--pico-color-red-500);"
+      >
+        Cerrar
+      </button>
+    </header>
+
+    <nav class="tabs">
+      <button
+        data-seccion="asignacionesMensuales"
+        class="active"
+        onclick="onTabClick(this)"
+      >
+        Asignaciones Mensuales
+      </button>
+
+      <button
+        data-seccion="asignacionesQuincenales"
+        onclick="onTabClick(this)"
+      >
+        Asignaciones Quincenales
+      </button>
+
+      <button
+        data-seccion="deducciones"
+        onclick="onTabClick(this)"
+      >
+        Deducciones
+      </button>
+    </nav>
+
+    <div id="modal-body">
+      <div id="seccion-asignacionesMensuales" class="seccion-form"></div>
+      <div id="seccion-asignacionesQuincenales" class="seccion-form" hidden></div>
+      <div id="seccion-deducciones" class="seccion-form" hidden></div>
+    </div>
+
+    <footer style="text-align: center;">
+      <button type="button" class="btn-save" onclick="guardarTodo()">
+        Guardar todos los cambios
+      </button>
+    </footer>
+  </article>
+</dialog>
+
+<dialog id="modal-concepto">
+  <article class="modal-article" style="min-width: 360px; max-width: 420px;">
+    <header class="modal-header">
+      <h3 id="modal-concepto-titulo">Nuevo concepto adicional</h3>
+    </header>
+
+    <form id="form-concepto">
+      {% csrf_token %}
+      <label>
+        Nombre del concepto
+        <input type="text" id="concepto-nombre" name="nombre" required>
+      </label>
+
+      <label>
+        Valor
+        <input type="text" id="concepto-valor" name="valor" inputmode="decimal" required>
+      </label>
+    </form>
+
+    <footer style="display:flex; justify-content:space-between; margin-top:1rem;">
+      <button type="button" onclick="cerrarModalConcepto()">Cancelar</button>
+      <button
+        type="submit"
+        form="form-concepto"
+        id="btn-guardar-concepto"
+        class="btn-save"
+        disabled
+        onclick="guardarConcepto()"
+      >
+        Guardar
+      </button>
+    </footer>
+  </article>
+</dialog>
+
+<dialog id="resumen-eliminacion">
+  <article>
+    <header>
+      <h3>Confirmar eliminación</h3>
+    </header>
+
+    <ul id="lista-eliminacion"></ul>
+
+    <footer>
+      <div style="display:grid; grid-template-columns: 3fr 1fr; gap:1rem;">
+    
+        <form method="post" action="{% url 'nomina:confirmar_eliminacion' %}">
+          {% csrf_token %}
+          <input type="hidden" name="ids" id="ids-eliminar">
+          <button type="submit" style="width:100%;" class="btn-danger">
+            Confirmar Eliminación
+          </button>
+        </form>
+    
+        <button type="button" onclick="cerrarResumen()" style="width:100%;">
+          Cancelar
+        </button>
+    
+      </div>
+    </footer>
+  </article>
+</dialog>
+
+<script>
+  let quincenaActual = null;
+  let seccionActualConcepto = null;
+
+  async function abrirModal(quincenaId) {
+    quincenaActual = quincenaId;
+
+    const modal = document.getElementById("modal");
+    const body = document.getElementById("modal-body");
+
+    // Limpiar contenido previo de secciones
+    body.querySelectorAll(".seccion-form").forEach(div => {
+      div.innerHTML = "";
+      div.hidden = true;
+    });
+
+    let defaultTab = modal.querySelector(".tabs button.active");
+
+    // 🔒 garantía absoluta
+    if (!defaultTab) {
+      defaultTab = modal.querySelector(".tabs button");
+      defaultTab.classList.add("active");
+    }
+
+    await cargarSeccion(defaultTab.dataset.seccion);
+    modal.showModal();
+  }  
+  
+  async function onTabClick(btn) {
+    document
+      .querySelectorAll(".tabs button")
+      .forEach(b => b.classList.remove("active"));
+  
+    btn.classList.add("active");
+  
+    await cargarSeccion(btn.dataset.seccion);
+  }
+  
+  async function cargarSeccion(seccion) {
+    const contenedorId = `seccion-${seccion}`;
+    const contenedor = document.getElementById(contenedorId);
+    if (!contenedor) return;
+
+    // Cargar solo la primera vez para esa sección
+    if (contenedor.innerHTML.trim() === "") {
+      const res = await fetch(`/nomina/quincena/${quincenaActual}/editar/${seccion}/`);
+      const html = await res.text();
+      contenedor.innerHTML = html;
+    }
+
+    // Mostrar solo la sección seleccionada
+    document.querySelectorAll("#modal-body .seccion-form").forEach(div => {
+      div.hidden = div.id !== contenedorId;
+    });
+  }
+
+  function abrirModalConcepto(quincenaId, seccion) {
+    quincenaActual = quincenaId;
+    seccionActualConcepto = seccion;
+
+    const dialog = document.getElementById("modal-concepto");
+    const inputNombre = document.getElementById("concepto-nombre");
+    const inputValor = document.getElementById("concepto-valor");
+    const btnGuardar = document.getElementById("btn-guardar-concepto");
+
+    inputNombre.value = "";
+    inputValor.value = "";
+    btnGuardar.disabled = true;
+
+    dialog.showModal();
+
+    function actualizarEstadoBoton() {
+      btnGuardar.disabled = !(inputNombre.value.trim() && inputValor.value.trim());
+    }
+
+    inputNombre.oninput = actualizarEstadoBoton;
+    inputValor.oninput = actualizarEstadoBoton;
+  }
+
+  function cerrarModalConcepto() {
+    const dialog = document.getElementById("modal-concepto");
+    if (dialog.open) dialog.close();
+  }
+  
+  function cerrarModal() {
+    const modal = document.getElementById("modal");
+  
+    modal.querySelectorAll(".tabs button")
+      .forEach(b => b.classList.remove("active"));
+  
+    modal.querySelector(".tabs button")?.classList.add("active");
+  
+    modal.close();
+  }  
+  
+  /* -------- GUARDADO AJAX UNIVERSAL -------- */
+  document.addEventListener("submit", async function (e) {
+    if (!e.target.matches(".ajax-form")) return;
+  
+    e.preventDefault();
+  
+    const form = e.target;
+  
+    const res = await fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: {
+        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+      }
+    });
+  
+    const data = await res.json();
+  
+    if (data.ok) {
+      alert("Guardado");
+    } else {
+      // Determinar sección a partir de la URL de acción
+      try {
+        const url = new URL(form.action, window.location.origin);
+        const partes = url.pathname.split("/").filter(Boolean);
+        const seccion = partes[partes.length - 1]; // .../guardar/<seccion>/
+        const contenedor = document.getElementById(`seccion-${seccion}`);
+        if (contenedor) {
+          contenedor.innerHTML = data.html;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  });
+
+  function marcarEliminarConcepto(boton) {
+    const contenedor = boton.closest("div");
+    const deleteInput = contenedor.querySelector("input[type=checkbox]");
+  
+    if (!deleteInput) return;
+  
+    deleteInput.checked = !deleteInput.checked;
+  
+    if (deleteInput.checked) {
+      contenedor.style.opacity = "0.4";
+      boton.textContent = "↩";
+    } else {
+      contenedor.style.opacity = "1";
+      boton.textContent = "−";
+    }
+  }
+
+  async function guardarTodo() {
+    const forms = document.querySelectorAll("#modal-body form.ajax-form");
+    if (!forms.length) {
+      alert("No hay formularios para guardar.");
+      return;
+    }
+
+    let huboError = false;
+
+    for (const form of forms) {
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+          }
+        });
+
+        const data = await res.json();
+
+        const url = new URL(form.action, window.location.origin);
+        const partes = url.pathname.split("/").filter(Boolean);
+        const seccion = partes[partes.length - 1];
+        const contenedor = document.getElementById(`seccion-${seccion}`);
+
+        if (data.ok) {
+          // No reemplazamos el HTML en éxito para no perder el foco del usuario
+          continue;
+        } else if (contenedor) {
+          contenedor.innerHTML = data.html;
+          huboError = true;
+        }
+      } catch (err) {
+        console.error(err);
+        huboError = true;
+      }
+    }
+
+    if (huboError) {
+      alert("Algunas secciones tienen errores. Revise los formularios.");
+    } else {
+      alert("Cambios guardados correctamente.");
+      cerrarModal();
+    }
+  }
+
+  async function guardarConcepto() {
+    if (!quincenaActual || !seccionActualConcepto) return;
+
+    const dialog = document.getElementById("modal-concepto");
+    const formConcepto = document.getElementById("form-concepto");
+    const inputNombre = document.getElementById("concepto-nombre");
+    const inputValor = document.getElementById("concepto-valor");
+    const btnGuardar = document.getElementById("btn-guardar-concepto");
+
+    const nombre = inputNombre.value.trim();
+    let valor = inputValor.value.trim();
+
+    if (!nombre || !valor) return;
+
+    // Normalizar valor a decimal compatible (coma o punto)
+    valor = valor.replace(",", ".");
+
+    btnGuardar.disabled = true;
+
+    try {
+      const res = await fetch(
+        `/nomina/quincena/${quincenaActual}/agregar-extra/${seccionActualConcepto}/`,
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            nombre,
+            valor,
+          }),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": formConcepto.querySelector("[name=csrfmiddlewaretoken]").value,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        alert(data.error || "No se pudo agregar el concepto.");
+        btnGuardar.disabled = false;
+        return;
+      }
+
+      // Reemplazar la sección actual con el HTML actualizado
+      const contenedor = document.getElementById(`seccion-${seccionActualConcepto}`);
+      if (contenedor) {
+        contenedor.innerHTML = data.html;
+      }
+
+      dialog.close();
+    } catch (err) {
+      console.error(err);
+      alert("Error inesperado al agregar el concepto.");
+      btnGuardar.disabled = false;
+    }
+  }
+</script>  
+
+<script>
+  const pendientes = new Map();
+
+  function marcarParaEliminar(id, boton) {
+    const fila = boton.closest("tr");
+
+    if (pendientes.has(id)) {
+      pendientes.delete(id);
+      fila.style.opacity = "1";
+      boton.textContent = "🗑";
+    } else {
+      pendientes.set(id, fila.querySelector("td:nth-child(2)").innerText);
+      fila.style.opacity = "0.4";
+      boton.textContent = "↩";
+    }
+
+    actualizarBotonConfirmar();
+  }
+
+  function actualizarBotonConfirmar() {
+    const btn = document.getElementById("confirmar-cambios");
+    btn.textContent = `Eliminar (${pendientes.size})`;
+    btn.hidden = pendientes.size === 0;
+  }
+</script>
+
+<script>
+  function normalizar(texto) {
+    return texto
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // quita acentos
+  }
+
+  const inputBusqueda = document.getElementById("busqueda-empleado");
+  const filas = document.querySelectorAll("#tabla-empleados tr");
+
+  inputBusqueda.addEventListener("input", function () {
+    const busqueda = normalizar(this.value).trim();
+    const palabras = busqueda.split(/\s+/);
+
+    filas.forEach(fila => {
+      const nombre = normalizar(fila.dataset.nombre);
+      const cedula = normalizar(fila.dataset.cedula);
+
+      const coincide = palabras.every(p =>
+        nombre.includes(p) || cedula.includes(p)
+      );
+
+      fila.style.display = coincide ? "" : "none";
+    });
+  });
+</script>
+
+<script>
+  function mostrarResumen() {
+    const lista = document.getElementById("lista-eliminacion");
+    const ids = document.getElementById("ids-eliminar");
+    lista.innerHTML = "";
+
+    const nombres = [];
+
+    pendientes.forEach((nombre, id) => {
+      const li = document.createElement("li");
+      li.textContent = nombre;
+      lista.appendChild(li);
+      nombres.push(id);
+    });
+
+    ids.value = nombres.join(",");
+    document.getElementById("resumen-eliminacion").showModal();
+  }
+
+  function cerrarResumen() {
+    document.getElementById("resumen-eliminacion").close();
+  }
+</script>
+
 {% endblock %}

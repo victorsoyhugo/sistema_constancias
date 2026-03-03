@@ -2,29 +2,10 @@
 {% block title %}Inicio{% endblock %}
 
 {% block content %}
-<h1 style="text-align:center;">Sistema de Nómina FUNDABIT</h1>
+<h1 style="text-align:center;">Sistema de Constancias y Recibos de Pagos</h1>
 <hr>
 
 <div class="grid">
-  <article>
-    <h4>Verificar código de PDF</h4>
-    <form method="POST">
-      {% csrf_token %}
-      {{ form_verificar.as_p }}
-      <button type="submit" name="verificar_codigo">Verificar</button>
-    </form>
-
-    {% if resultado %}
-      <div class="{% if resultado.ok %}success{% else %}error{% endif %}">
-        <p>{{ resultado.mensaje }}</p>
-        {% if resultado.ok %}
-          <p><strong>Empleado:</strong> {{ resultado.empleado }}</p>
-          <p><strong>Documento:</strong> {{ resultado.tipo }}</p>
-          <p><strong>Periodo:</strong> {{ resultado.periodo }}</p>
-        {% endif %}
-      </div>
-    {% endif %}
-  </article>
 
   <article>
     <h4>Consultar recibo / constancia</h4>
@@ -36,6 +17,30 @@
     {% for message in messages %}
       <div class="message error">{{ message }}</div>
     {% endfor %}
+  </article>
+
+  <div>
+    <article>
+      <h4>Verificar código de PDF</h4>
+      <form method="POST">
+        {% csrf_token %}
+        {{ form_verificar.as_p }}
+        <button type="submit" name="verificar_codigo">Verificar</button>
+      </form>
+
+      {% if resultado %}
+        <div class="{% if resultado.ok %}success{% else %}error{% endif %}">
+          <p>{{ resultado.mensaje }}</p>
+          {% if resultado.ok %}
+            <p><strong>Empleado:</strong> {{ resultado.empleado }}</p>
+            <p><strong>Documento:</strong> {{ resultado.tipo }}</p>
+            <p><strong>Periodo:</strong> {{ resultado.periodo }}</p>
+            <p><strong>Fecha de Expedición:</strong>
+              {{ resultado.expedicion|date:"d/m/Y, h:i A" }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+      </div>
   </article>
 </div>
 {% endblock %}

@@ -4,14 +4,32 @@
 {% block content %}
 <h2>Cargar Nómina</h2>
 
-<form method="POST" enctype="multipart/form-data">
+<p id="quincena-preview">
+  {{ quincena_siguiente_texto }}
+</p>
+
+<form
+  id="form-cargar-nomina"
+  method="POST"
+  enctype="multipart/form-data"
+  data-periodo-siguiente="{{ quincena_siguiente.periodo }}"
+  data-mes-siguiente="{{ quincena_siguiente.mes }}"
+  data-ano-siguiente="{{ quincena_siguiente.ano }}"
+  data-texto-siguiente="{{ quincena_siguiente_texto }}"
+  {% if quincena_ultima %}
+    data-periodo-ultima="{{ quincena_ultima.periodo }}"
+    data-mes-ultima="{{ quincena_ultima.mes }}"
+    data-ano-ultima="{{ quincena_ultima.ano }}"
+    data-texto-ultima="{{ quincena_ultima_texto }}"
+  {% endif %}
+>
   {% csrf_token %}
   {{ form.as_p }}
 
   <div class="grid">
-    <button type="submit" name="modo" value="nueva">Cargar Nueva Nómina</button>
+    <button type="submit" name="modo" value="nueva" id="btn-modo-nueva">Cargar Nueva Nómina</button>
     {% if tiene_cargas %}
-      <button type="submit" name="modo" value="modificar" class="secondary">Modificar Última Carga</button>
+      <button type="submit" name="modo" value="modificar" class="secondary" id="btn-modo-modificar">Modificar Última Carga</button>
     {% else %}
       <button type="button" disabled>Modificar Última Carga</button>
     {% endif %}
@@ -23,4 +41,132 @@
     {{ message }}
   </div>
 {% endfor %}
+
+<!-- Modal de confirmación antes de cargar -->
+<dialog id="modal-confirmacion" class="modal">
+  <div class="modal-content">
+    <p id="modal-mensaje"></p>
+    <div class="grid">
+      <button type="button" id="btn-confirmar-si">Sí</button>
+      <button type="button" id="btn-confirmar-no" class="secondary">No</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  (function() {
+    const form = document.getElementById("form-cargar-nomina");
+    if (!form) return;
+
+    const bonoInput = document.getElementById("id_bono_alimenticio");
+    const preview = document.getElementById("quincena-preview");
+    const btnNueva = document.getElementById("btn-modo-nueva");
+    const btnModificar = document.getElementById("btn-modo-modificar");
+
+    const modal = document.getElementById("modal-confirmacion");
+    const modalMensaje = document.getElementById("modal-mensaje");
+    const btnSi = document.getElementById("btn-confirmar-si");
+    const btnNo = document.getElementById("btn-confirmar-no");
+
+    // Control para evitar mostrar el modal dos veces
+    let envioConfirmado = false;
+    let modoSeleccionado = "nueva";
+
+    function obtenerTextoObjetivo(modo) {
+      if (modo === "modificar" && form.dataset.textoUltima) return form.dataset.textoUltima;
+      return form.dataset.textoSiguiente || "";
+    }
+
+    function obtenerPeriodoObjetivo(modo) {
+      if (modo === "modificar" && form.dataset.periodoUltima) return form.dataset.periodoUltima;
+      return form.dataset.periodoSiguiente || "";
+    }
+
+    function actualizarPreview() {
+      if (!preview) return;
+      const texto = obtenerTextoObjetivo(modoSeleccionado);
+      if (texto) preview.textContent = texto;
+    }
+
+    function actualizarEstadoBono() {
+      if (!bonoInput) return;
+      const periodoObjetivo = obtenerPeriodoObjetivo(modoSeleccionado);
+      if (periodoObjetivo === "2") {
+        bonoInput.removeAttribute("disabled");
+      } else {
+        bonoInput.value = "";
+        bonoInput.setAttribute("disabled", "disabled");
+      }
+    }
+
+    if (btnNueva) {
+      btnNueva.addEventListener("click", function() {
+        modoSeleccionado = "nueva";
+        actualizarPreview();
+        actualizarEstadoBono();
+      });
+    }
+
+    if (btnModificar) {
+      btnModificar.addEventListener("click", function() {
+        modoSeleccionado = "modificar";
+        actualizarPreview();
+        actualizarEstadoBono();
+      });
+    }
+
+    // Estado inicial
+    actualizarPreview();
+    actualizarEstadoBono();
+
+    if (form) {
+      form.addEventListener("submit", function(e) {
+        if (envioConfirmado) {
+          // Ya se confirmó, permitir envío normal
+          return;
+        }
+
+        e.preventDefault();
+
+        const submitter = e.submitter;
+        const modo = submitter && submitter.name === "modo" ? submitter.value : modoSeleccionado;
+        modoSeleccionado = modo || modoSeleccionado;
+
+        const mensaje = obtenerTextoObjetivo(modoSeleccionado) || "¿Estás seguro?";
+        if (modal && typeof modal.showModal === "function" && modalMensaje) {
+          modalMensaje.textContent = mensaje;
+          modal.showModal();
+        } else {
+          // Fallback sin modal
+          if (confirm(mensaje)) {
+            envioConfirmado = true;
+            form.submit();
+          }
+        }
+      });
+    }
+
+    if (btnSi) {
+      btnSi.addEventListener("click", function() {
+        envioConfirmado = true;
+        if (modal) {
+          if (typeof modal.close === "function") {
+            modal.close();
+          }
+        }
+        form.submit();
+      });
+    }
+
+    if (btnNo) {
+      btnNo.addEventListener("click", function() {
+        if (modal) {
+          if (typeof modal.close === "function") {
+            modal.close();
+          }
+        }
+      });
+    }
+  })();
+</script>
 {% endblock %}

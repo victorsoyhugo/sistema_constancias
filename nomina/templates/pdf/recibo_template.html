@@ -1,40 +1,302 @@
-<!DOCTYPE html>
 {% load static %}
-<html lang="es">
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="UTF-8" />
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<style>
-body { font-family: 'Helvetica', sans-serif; margin: 40px; }
-table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-td, th { border: 1px solid #999; padding: 6px; }
-footer { position: fixed; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 0.8em; color: #555; }
-</style>
+    <meta charset="utf-8">
+    <title>Recibo de Pago</title>
+
+    <style>
+        {{ estilos_tabla|safe }}
+
+        /* DEFINICIÓN DE PÁGINA CON MÁRGENES PARA HEADER Y FOOTER */
+        @page {
+            size: A4;
+            max-weight: 800px;
+            
+            /* Header usando background image en toda la página */
+            background: url({% static 'img/banner-superior.png' %}) no-repeat center 0mm;
+            background-size: 170mm auto; /* Ancho del contenido */
+        }
+
+        body::before {
+            content: "";
+            display: block;
+            height: 100px; /* Altura del banner */
+            margin-bottom: 100x;
+        }
+
+        /* ESTILOS GENERALES */
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        /* CONTENEDOR PRINCIPAL */
+        .recibo-container {
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+            padding: 0;
+            margin-left: center;
+        }
+
+        /* FOOTER QUE SE REPITE EN CADA PÁGINA */
+        .page-footer {
+            position: fixed;
+            bottom: 0px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            margin: auto;
+            border-top: 1px solid #c7c0c0;
+            height: 80px;
+        }
+
+        /* CONTENIDO PRINCIPAL */
+        .page-content {
+            margin-top: auto; /* Espacio después del header */
+        }
+
+        /* BANNERS */
+        .banner {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            margin-left: center;
+        }
+        
+        .banner-inferior {
+            max-height: 100%;
+            height: auto;
+            max-width: auto;
+        }
+
+        /* ENCABEZADO DEL CONTENIDO (solo primera página) */
+        .header-table {
+            width: 90%;
+            font-size: 13px;
+        }
+
+        .header-table tr {
+            margin-bottom: 0;
+        }
+
+        .header-table td {
+            padding: -25px;
+            vertical-align: top;
+            text-align: center;
+            width: auto -15px;
+        }
+
+        .label {
+            font-weight: bold;
+            width: 50px;
+            white-space: nowrap;
+            color: #000;
+        }
+
+        /* TABLA DE CONCEPTOS - PERMITE DIVISIÓN AUTOMÁTICA */
+        .remuneracion-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px auto;
+            font-size: 12px;
+            table-layout: fixed;
+            page-break-inside: auto; /* Permite dividir entre páginas */
+        }
+
+        /* El header de la tabla se repite en cada página */
+        .remuneracion-table thead {
+            display: table-header-group;
+        }
+
+        .remuneracion-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            padding: 10px auto;
+            border: 0.1px solid #000;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 1.5;
+        }
+
+        .remuneracion-table td {
+            padding: 8px 8px;
+            border: 1px solid #000;
+            text-align: right;
+            vertical-align: middle;
+            line-height: 1.6;
+            page-break-inside: avoid; /* Intenta mantener celdas enteras */
+            page-break-before: auto;
+        }
+
+        .remuneracion-table td:first-child {
+            text-align: left;
+            padding-left: 10px;
+            width: 45%;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        /* SEPARADORES */
+        .section-separator td {
+            font-weight: bold;
+            border-top: 2px solid #666 !important;
+            border-bottom: 1px solid #666 !important;
+            padding: 10px !important;
+            background-color: #f8f8f8;
+            text-align: left !important;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #f5f5f5;
+            page-break-before: avoid; /* Evita que los totales queden solos */
+        }
+
+        .total-row td {
+            border-top: 0.1px solid #000;
+        }
+
+        /* CONTENIDO DEL FOOTER */
+        .footer-content {
+            text-align: left;
+            font-size: 12px;
+        }
+
+        /* CLASES PARA CONTROL DE SALTO */
+        .avoid-break {
+            page-break-inside: avoid;
+        }
+        
+        .force-new-page {
+            page-break-before: always;
+        }
+    </style>
 </head>
+
 <body>
-<h2 style="text-align:center;">RECIBO DE PAGO</h2>
-<p><strong>Empleado:</strong> {{ empleado.nombres_y_apellidos }} (C.I. {{ empleado.cedula }})</p>
-<p><strong>Periodo:</strong> {% if quincena.periodo == 1 %}1era{% else %}2da{% endif %} QNA - {{ quincena.get_mes_display }} {{ quincena.ano }}</p>
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="recibo-container">
+        <!-- ENCABEZADO (solo en primera página) -->
+        <div class="page-content">
+            <table class="header-table">
+                <tr><td class="label", style="text-align: left">Reporte:<strong style="padding: 10px">Recibo de Pago<strong></td></tr>
+                <tr><td class="label" style="text-align: left">
+                    Período:<strong style="padding: 10px">
+                    {% if quincena.periodo == 1 %}
+                        1/{{ quincena.mes }}/{{ quincena.ano }} al 15/{{ quincena.mes }}/{{ quincena.ano }}
+                    {% elif quincena.periodo == 2 %}
+                        16/{{ quincena.mes }}/{{ quincena.ano }} al 
+                        {% spaceless %}
+                            {% if quincena.mes == 2 %}
+                                {% if quincena.ano|divisibleby:4 and not quincena.ano|divisibleby:100 or quincena.ano|divisibleby:400 %}
+                                    29
+                                {% else %}
+                                    28
+                                {% endif %}
+                            {% elif quincena.mes == 1 or quincena.mes == 3 or quincena.mes == 5 or quincena.mes == 7 or quincena.mes == 8 or quincena.mes == 10 or quincena.mes == 12 %}
+                                31
+                            {% else %}
+                                30
+                            {% endif %}
+                        {% endspaceless %}/{{ quincena.mes }}/{{ quincena.ano }}
+                    {% endif %}
+                    </strong>
+            </table>
+            <table class="header-table">
+                <tr><td class="label", style="text-align: left">Unidad Administrativa:</td><td><strong>{{ empleado.unidad_de_adscripcion_y_o_direccion }}</strong></td></tr>
+                <tr><td class="label", style="text-align: left">Trabajador:</td><td>{{ empleado.nombres_y_apellidos }}</td><td style="text-align: right">{{ empleado.cedula }}</td></tr>
+                <tr><td class="label", style="text-align: left">Cargo:</td><td><strong>{{ empleado.cargo }}</strong></td></tr>
+                <tr><td class="label", style="text-align: left">Fecha de Ingreso:</td><td><strong>{{ empleado.fecha_de_ingreso|date:"d/m/Y" }}<strong></td></tr>
+                <tr><td class="label", style="text-align: left">Sueldo Básico:</td><td><strong>{{ sueldo_basico_formateado }}</strong></td></tr>
+            </table>
 
-<h4>Asignaciones</h4>
-<table>
-  <tr><th>Concepto</th><th>Monto (Bs.)</th></tr>
-  <tr><td>Sueldo Base</td><td>{{ asignacion.sueldo_base_quincenal }}</td></tr>
-  <tr><td>Prima</td><td>{{ asignacion.prima_de_profesionalizacion_quincenal }}</td></tr>
-  <tr><td>Total</td><td>{{ asignacion.total }}</td></tr>
-</table>
+            <!-- TABLA DE CONCEPTOS - WEASYPRINT LA DIVIDIRÁ AUTOMÁTICAMENTE -->
+            <table class="remuneracion-table {{ clase_tabla }}">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Concepto</th>
+                        <th style="width: 18%;">Asignaciones</th>
+                        <th style="width: 18%;">Deducciones</th>
+                        <th style="width: auto;">A pagar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- SECCIÓN 1: ASIGNACIONES REGULARES -->
+                    {% if asignaciones_regulares %}
+                        {% for item in asignaciones_regulares %}
+                        <tr class="avoid-break">
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.asignacion }}</td>
+                            <td>{{ item.deduccion }}</td>
+                            <td>{{ item.apagar }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
 
-<h4>Deducciones</h4>
-<table>
-  <tr><th>Concepto</th><th>Monto (Bs.)</th></tr>
-  <tr><td>Retención</td><td>{{ deducciones.retencion }}</td></tr>
-  <tr><td>Total</td><td>{{ deducciones.total }}</td></tr>
-</table>
+                    <!-- SECCIÓN 2: ASIGNACIONES ADICIONALES -->
+                    {% if asignaciones_adicionales %}
+                        {% for item in asignaciones_adicionales %}
+                        <tr class="avoid-break">
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.asignacion }}</td>
+                            <td>{{ item.deduccion }}</td>
+                            <td>{{ item.apagar }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
 
-<footer>
-  Código de verificación: {{ codigo_pdf }}<br>
-  Generado el {{ fecha_generacion }}<br>
-  Verificable en https://tusistema.com/
-</footer>
+                    <!-- SECCIÓN 3: DEDUCCIONES REGULARES -->
+                    {% if deducciones_regulares %}
+                        {% for item in deducciones_regulares %}
+                        <tr class="avoid-break">
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.asignacion }}</td>
+                            <td>{{ item.deduccion }}</td>
+                            <td>{{ item.apagar }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- SECCIÓN 4: DEDUCCIONES ADICIONALES -->
+                    {% if deducciones_adicionales %}
+                        {% for item in deducciones_adicionales %}
+                        <tr class="avoid-break">
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.asignacion }}</td>
+                            <td>{{ item.deduccion }}</td>
+                            <td>{{ item.apagar }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- FILA DE TOTALES -->
+                    <tr class="total-row avoid-break">
+                        <td style="text-align:right;"><strong>Totales Bs</strong></td>
+                        <td><strong>{{ total_asignaciones|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_deducciones|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_pagar|floatformat:2 }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FOOTER QUE SE REPITE EN TODAS LAS PÁGINAS -->
+    <div class="page-footer">
+        <div class="footer-content">
+            <p style="margin: auto;">
+                <strong>Código de verificación:</strong> {{ codigo_pdf }}
+            </p>
+            <p style="margin: 0;">
+                Generado el {{ fecha_generacion }}
+            </p>
+        </div>
+        <img src="{% static 'img/banner-inferior.png' %}" alt="Banner Inferior" class="banner banner-inferior">
+    </div>
 </body>
 </html>

@@ -2,6 +2,7 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 import uuid
 from django.db import models
+from django import forms
 
 
 class Cargo(models.Model):
@@ -71,17 +72,21 @@ class Quincena(models.Model):
     ano = models.IntegerField()
     fecha = models.DateField()
     dias_laborados = models.IntegerField(default=0)
-    horas_extras_quincena = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_retroactivo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_asignacion_primera_quincena = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_asignacion_segunda_quincena = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_de_asignacion_quincenal_todos_los_conceptos = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_mensual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_asignacion_mensual_todos_los_conceptos = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_deducciones = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_a_cancelar = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    horas_extras_quincena = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_retroactivo = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_asignacion_primera_quincena = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_asignacion_segunda_quincena = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_de_asignacion_quincenal_todos_los_conceptos = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_mensual = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_asignacion_mensual_todos_los_conceptos = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_deducciones = models.DecimalField(max_digits=100, decimal_places=3, default=0)
+    total_a_cancelar = models.DecimalField(max_digits=100, decimal_places=3, default=0)
     nota = models.TextField(blank=True, null=True)
-    bono_alimenticio = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    bono_alimenticio = models.DecimalField(max_digits=100, decimal_places=3, blank=True, null=True)
+    
+    is_deleted = models.BooleanField(default=False)
+    pending_delete = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Quincena {self.periodo}/{self.mes}/{self.ano} - {self.empleado}"
@@ -89,54 +94,54 @@ class Quincena(models.Model):
 
 class AsignacionesMensuales(models.Model):
     quincena = models.OneToOneField(Quincena, on_delete=models.CASCADE, related_name="asignaciones_mensuales")
-    sueldo_base_mensual = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_de_antiguedad = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    prima_de_profesionalizacion = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_por_hijos = models.DecimalField(max_digits=10, decimal_places=2)
-    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad = models.DecimalField(max_digits=10, decimal_places=2)
-    horas_extras = models.DecimalField(max_digits=10, decimal_places=2)
-    complemento_del_salario = models.DecimalField(max_digits=10, decimal_places=2)
-    becas_para_hijos = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_asistencial_y_del_hogar = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_trabajadores_adm_y_obr = models.DecimalField(max_digits=10, decimal_places=2)
-    encargaduria = models.DecimalField(max_digits=10, decimal_places=2)
+    sueldo_base_mensual = models.DecimalField(max_digits=10, decimal_places=3)
+    prima_de_antiguedad = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    prima_de_profesionalizacion = models.DecimalField(max_digits=10, decimal_places=3)
+    prima_por_hijos = models.DecimalField(max_digits=10, decimal_places=3)
+    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad = models.DecimalField(max_digits=10, decimal_places=3)
+    horas_extras = models.DecimalField(max_digits=10, decimal_places=3)
+    complemento_del_salario = models.DecimalField(max_digits=10, decimal_places=3)
+    becas_para_hijos = models.DecimalField(max_digits=10, decimal_places=3)
+    prima_asistencial_y_del_hogar = models.DecimalField(max_digits=10, decimal_places=3)
+    prima_trabajadores_adm_y_obr = models.DecimalField(max_digits=10, decimal_places=3)
+    encargaduria = models.DecimalField(max_digits=10, decimal_places=3)
 
 
 class AsignacionesQuincenales(models.Model):
     quincena = models.OneToOneField(Quincena, on_delete=models.CASCADE, related_name="asignaciones_quincenales")
-    sueldo_base_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_de_antiguedad_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_de_profesionalizacion_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_por_hijos_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    complemento_del_salario_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    becas_para_hijos_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_asistencial_y_del_hogar_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    prima_trabajadores_adm_y_obr_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    encargaduria_quincenal = models.DecimalField(max_digits=10, decimal_places=2)
-    diferencia_por_comisiones_de_servicios = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_sueldo_base = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_prima_de_antiguedad = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_prima_de_profesionalizacion = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_prima_por_hijos = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_contribucion_para_trabajadoras_y_trabajadores_con_discapacidad = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_horas_extras = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_becas_para_hijos = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_prima_asistencial_y_del_hogar = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_prima_trabajadores_adm_y_obr = models.DecimalField(max_digits=10, decimal_places=2)
-    retroactivo_encargaduria = models.DecimalField(max_digits=10, decimal_places=2)
+    sueldo_base_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    prima_de_antiguedad_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    prima_de_profesionalizacion_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    prima_por_hijos_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    complemento_del_salario_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    becas_para_hijos_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    prima_asistencial_y_del_hogar_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    prima_trabajadores_adm_y_obr_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    encargaduria_quincenal = models.DecimalField(max_digits=100, decimal_places=3)
+    diferencia_por_comisiones_de_servicios = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_sueldo_base = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_prima_de_antiguedad = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_prima_de_profesionalizacion = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_prima_por_hijos = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_contribucion_para_trabajadoras_y_trabajadores_con_discapacidad = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_horas_extras = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_becas_para_hijos = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_prima_asistencial_y_del_hogar = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_prima_trabajadores_adm_y_obr = models.DecimalField(max_digits=100, decimal_places=3)
+    retroactivo_encargaduria = models.DecimalField(max_digits=100, decimal_places=3)
 
 
 class Deducciones(models.Model):
     quincena = models.OneToOneField(Quincena, on_delete=models.CASCADE, related_name="deducciones")
-    retencion_por_caja_de_ahorro = models.DecimalField(max_digits=10, decimal_places=2)
-    retencion_por_sso = models.DecimalField(max_digits=10, decimal_places=2)
-    retencion_rpe = models.DecimalField(max_digits=10, decimal_places=2)
-    retencion_por_faov = models.DecimalField(max_digits=10, decimal_places=2)
-    retencion_por_fejp = models.DecimalField(max_digits=10, decimal_places=2)
-    sinaep = models.DecimalField(max_digits=10, decimal_places=2)
-    ipasme = models.DecimalField(max_digits=10, decimal_places=2)
-    descuento_por_pago_indebido = models.DecimalField(max_digits=10, decimal_places=2)
+    retencion_por_caja_de_ahorro = models.DecimalField(max_digits=100, decimal_places=3)
+    retencion_por_sso = models.DecimalField(max_digits=100, decimal_places=3)
+    retencion_rpe = models.DecimalField(max_digits=100, decimal_places=3)
+    retencion_por_faov = models.DecimalField(max_digits=100, decimal_places=3)
+    retencion_por_fejp = models.DecimalField(max_digits=100, decimal_places=3)
+    sinaep = models.DecimalField(max_digits=100, decimal_places=3)
+    ipasme = models.DecimalField(max_digits=100, decimal_places=3)
+    descuento_por_pago_indebido = models.DecimalField(max_digits=100, decimal_places=3)
 
 
 class AsignacionAdicionalQuincenal(models.Model):
@@ -147,7 +152,7 @@ class AsignacionAdicionalQuincenal(models.Model):
         null=True
     )
     nombre = models.CharField(max_length=100)
-    valor = models.DecimalField(max_digits=100, decimal_places=2)
+    valor = models.DecimalField(max_digits=100, decimal_places=3)
     descripcion = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -161,7 +166,7 @@ class AsignacionAdicionalMensual(models.Model):
         null=True
     )
     nombre = models.CharField(max_length=100)
-    valor = models.DecimalField(max_digits=100, decimal_places=2)
+    valor = models.DecimalField(max_digits=100, decimal_places=3)
     descripcion = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -175,7 +180,7 @@ class DeduccionAdicional(models.Model):
         null=True
     )
     nombre = models.CharField(max_length=100)
-    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    valor = models.DecimalField(max_digits=10, decimal_places=3)
     descripcion = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -192,3 +197,64 @@ class CodigoPDF(models.Model):
     @staticmethod
     def generar_codigo():
         return uuid.uuid4().hex
+
+
+class AsignacionesMensualesForm(forms.ModelForm):
+    class Meta:
+        model = AsignacionesMensuales
+        exclude = ("quincena",)
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for name, field in self.fields.items():
+            field.widget.attrs.update({
+                "class": "form-control",
+                "step": "0.001",
+                "min": "0"
+            })
+            
+class AsignacionesQuincenalesForm(forms.ModelForm):
+    class Meta:
+        model = AsignacionesQuincenales
+        exclude = ("quincena",)
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for name, field in self.fields.items():
+            field.widget.attrs.update({
+                "class": "form-control",
+                "step": "0.001",
+                "min": "0"
+            })
+
+class DeduccionesForm(forms.ModelForm):
+    class Meta:
+        model = Deducciones
+        exclude = ("quincena",)
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for name, field in self.fields.items():
+            field.widget.attrs.update({
+                "class": "form-control",
+                "step": "0.001",
+                "min": "0"
+            })
+            
+class AsignacionAdicionalQuincenalForm(forms.ModelForm):
+    class Meta:
+        model = AsignacionAdicionalQuincenal
+        fields = ("valor",)
+
+class AsignacionAdicionalMensualForm(forms.ModelForm):
+    class Meta:
+        model = AsignacionAdicionalMensual
+        fields = ("valor",)
+
+class DeduccionAdicionalForm(forms.ModelForm):
+    class Meta:
+        model = DeduccionAdicional
+        fields = ("valor",)

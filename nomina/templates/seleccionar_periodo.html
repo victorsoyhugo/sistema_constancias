@@ -21,7 +21,7 @@
       <option value="">Seleccione...</option>
       {% for q in quincenas %}
         <option value="{{ q.id }}">
-          {% if q.periodo == 1 %}1era{% else %}2da{% endif %} QNA de {{ q.get_mes_display }} de {{ q.ano }}
+          {% if q.periodo == 1 %}1era{% else %}2da{% endif %} Quincena de {{ q.mes|nombre_mes }} de {{ q.ano }}
         </option>
       {% endfor %}
     </select>

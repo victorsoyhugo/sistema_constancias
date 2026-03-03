@@ -302,42 +302,111 @@ class Command(BaseCommand):
     help = "Importa quincenas desde un archivo .xlsx siguiendo la lógica especificada."
 
     def add_arguments(self, parser):
-        # No argumentos CLI: interactivo
-        pass
+        """
+        Soporta dos modos:
+        - Interactivo por consola (sin argumentos).
+        - No interactivo (por ejemplo, llamado desde la web) pasando:
+          --archivo, --periodo, --mes, --ano y opcionalmente --bono_alimenticio.
+        """
+        parser.add_argument(
+            "--archivo",
+            dest="archivo",
+            type=str,
+            help="Ruta completa al archivo .xlsx a importar.",
+        )
+        parser.add_argument(
+            "--periodo",
+            dest="periodo",
+            type=int,
+            choices=[1, 2],
+            help="Periodo de la quincena (1=Primera, 2=Segunda).",
+        )
+        parser.add_argument(
+            "--mes",
+            dest="mes",
+            type=int,
+            help="Mes numérico (1-12) de la quincena.",
+        )
+        parser.add_argument(
+            "--ano",
+            dest="ano",
+            type=int,
+            help="Año de la quincena (por ejemplo 2025).",
+        )
+        parser.add_argument(
+            "--bono_alimenticio",
+            dest="bono_alimenticio",
+            type=str,
+            default=None,
+            help="Monto de bono alimenticio para periodo 2 (opcional).",
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.NOTICE("IMPORTAR QUINCENA - comando interactivo"))
-        periodo = None
-        while periodo not in (1, 2):
-            try:
-                periodo = int(input("Ingrese periodo (1=Primera quincena, 2=Segunda quincena): ").strip())
-            except Exception:
-                periodo = None
+        """
+        Si se reciben archivo/periodo/mes/ano por argumentos, se usa modo no interactivo
+        (por ejemplo, llamado desde la vista web). Si no, se mantiene el modo interactivo
+        por consola existente.
+        """
+        archivo_arg = options.get("archivo")
+        periodo_arg = options.get("periodo")
+        mes_arg = options.get("mes")
+        ano_arg = options.get("ano")
+        bono_arg = options.get("bono_alimenticio")
 
-        mes = None
-        while mes is None or not (1 <= mes <= 12):
-            try:
-                mes = int(input("Ingrese mes (1-12): ").strip())
-            except Exception:
-                mes = None
+        if archivo_arg and periodo_arg and mes_arg and ano_arg:
+            # Modo no interactivo (ej. Django call_command desde la web)
+            periodo = int(periodo_arg)
+            mes = int(mes_arg)
+            ano = int(ano_arg)
+            archivo_path = archivo_arg
 
-        ano = None
-        while ano is None:
-            try:
-                ano = int(input("Ingrese año (ej. 2025): ").strip())
-            except Exception:
-                ano = None
+            # Validar archivo
+            p = Path(archivo_path)
+            if not (p.exists() and p.suffix.lower() in (".xlsx",)):
+                raise CommandError("La ruta del archivo proporcionada no existe o no es un .xlsx válido.")
 
-        # pedir ruta del archivo
-        archivo_path = None
-        while not archivo_path:
-            ruta = input("Ingrese la ruta completa al archivo .xlsx: ").strip()
-            if ruta:
-                p = Path(ruta)
-                if p.exists() and p.suffix.lower() in ('.xlsx',):
-                    archivo_path = str(p)
-                else:
-                    self.stdout.write(self.style.ERROR("Ruta inválida o no es .xlsx, inténtalo de nuevo."))
+            bono_alimenticio_valor = None
+            if bono_arg is not None:
+                bono_alimenticio_valor = parse_decimal(bono_arg)
+
+            self.stdout.write(self.style.NOTICE("IMPORTAR QUINCENA - modo no interactivo"))
+        else:
+            # Modo interactivo por consola (comportamiento anterior)
+            self.stdout.write(self.style.NOTICE("IMPORTAR QUINCENA - comando interactivo"))
+            periodo = None
+            while periodo not in (1, 2):
+                try:
+                    periodo = int(input("Ingrese periodo (1=Primera quincena, 2=Segunda quincena): ").strip())
+                except Exception:
+                    periodo = None
+
+            mes = None
+            while mes is None or not (1 <= mes <= 12):
+                try:
+                    mes = int(input("Ingrese mes (1-12): ").strip())
+                except Exception:
+                    mes = None
+
+            ano = None
+            while ano is None:
+                try:
+                    ano = int(input("Ingrese año (ej. 2025): ").strip())
+                except Exception:
+                    ano = None
+
+            # pedir ruta del archivo
+            archivo_path = None
+            while not archivo_path:
+                ruta = input("Ingrese la ruta completa al archivo .xlsx: ").strip()
+                if ruta:
+                    p = Path(ruta)
+                    if p.exists() and p.suffix.lower() in ('.xlsx',):
+                        archivo_path = str(p)
+                    else:
+                        self.stdout.write(self.style.ERROR("Ruta inválida o no es .xlsx, inténtalo de nuevo."))
+
+            bono_alimenticio_valor = None
+
         self.stdout.write(self.style.NOTICE(f"Periodo: {periodo} - Mes: {mes} - Año: {ano}"))
         self.stdout.write(self.style.NOTICE(f"Archivo: {archivo_path}"))
 
@@ -634,6 +703,19 @@ class Command(BaseCommand):
                                 return ws.cell(row=row, column=cidx).value
                         return None
                     return ws.cell(row=row, column=col).value
+                
+                #PARSEO POR RANGOS                
+                def get_cell_by_key_in_range(row, key, col_start, col_end):
+                    for c in range(col_start, col_end + 1):
+                        header = headers.get(c)
+                        if not header:
+                            continue
+                        if normalize_text(header) in [
+                            normalize_text(v)
+                            for v in HEADER_VARIANTS.get(key, [])
+                        ]:
+                            return ws.cell(row=row, column=c).value
+                    return None
 
                 nombres_val = get_cell_by_key('nombres_y_apellidos') or ''
                 unidad_val = get_cell_by_key('unidad_de_adscripcion_y_o_direccion') or ''
@@ -853,62 +935,63 @@ class Command(BaseCommand):
                     total_asignacion_mensual_todos_los_conceptos=parse_decimal(get_cell_by_key('total_asignacion_mensual_todos_los_conceptos')),
                     total_deducciones=parse_decimal(get_cell_by_key('total_deducciones')),
                     total_a_cancelar=parse_decimal(get_cell_by_key('total_a_cancelar')),
-                    nota=str(get_cell_by_key('nota') or '')[:2000]
+                    nota=str(get_cell_by_key('nota') or '')[:2000],
+                    bono_alimenticio=bono_alimenticio_valor if periodo == 2 else None,
                 )
 
                 # AsignacionesMensuales (OneToOne)
                 am = AsignacionesMensuales.objects.create(
                     quincena=quincena_obj,
-                    sueldo_base_mensual=parse_decimal(get_cell_by_key('sueldo_base_mensual')),
-                    prima_de_antiguedad=parse_decimal(get_cell_by_key('prima_de_antiguedad')),
-                    prima_de_profesionalizacion=parse_decimal(get_cell_by_key('prima_de_profesionalizacion')),
-                    prima_por_hijos=parse_decimal(get_cell_by_key('prima_por_hijos')),
-                    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad=parse_decimal(get_cell_by_key('contribucion_para_trabajadoras_y_trabajadores_con_discapacidad')),
-                    horas_extras=parse_decimal(get_cell_by_key('horas_extras')),
-                    complemento_del_salario=parse_decimal(get_cell_by_key('complemento_del_salario')),
-                    becas_para_hijos=parse_decimal(get_cell_by_key('becas_para_hijos')),
-                    prima_asistencial_y_del_hogar=parse_decimal(get_cell_by_key('prima_asistencial_y_del_hogar')),
-                    prima_trabajadores_adm_y_obr=parse_decimal(get_cell_by_key('prima_trabajadores_adm_y_obr')),
-                    encargaduria=parse_decimal(get_cell_by_key('encargaduria')),
+                    sueldo_base_mensual=parse_decimal(get_cell_by_key_in_range(row, 'sueldo_base_mensual', rango1_start, rango1_end)),
+                    prima_de_antiguedad=parse_decimal(get_cell_by_key_in_range(row, 'prima_de_antiguedad_mensual', rango1_start, rango1_end)),
+                    prima_de_profesionalizacion=parse_decimal(get_cell_by_key_in_range(row, 'prima_de_profesionalizacion_mensual', rango1_start, rango1_end)),
+                    prima_por_hijos=parse_decimal(get_cell_by_key_in_range(row, 'prima_por_hijos_mensual', rango1_start, rango1_end)),
+                    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad=parse_decimal(get_cell_by_key_in_range(row, 'contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_mensual', rango1_start, rango1_end)),
+                    horas_extras=parse_decimal(get_cell_by_key_in_range(row, 'horas_extras_mensual', rango1_start, rango1_end)),
+                    complemento_del_salario=parse_decimal(get_cell_by_key_in_range(row, 'complemento_del_salario_mensual', rango1_start, rango1_end)),
+                    becas_para_hijos=parse_decimal(get_cell_by_key_in_range(row, 'becas_para_hijos_mensual', rango1_start, rango1_end)),
+                    prima_asistencial_y_del_hogar=parse_decimal(get_cell_by_key_in_range(row, 'prima_asistencial_y_del_hogar_mensual', rango1_start, rango1_end)),
+                    prima_trabajadores_adm_y_obr=parse_decimal(get_cell_by_key_in_range(row, 'prima_trabajadores_adm_y_obr_mensual', rango1_start, rango1_end)),
+                    encargaduria=parse_decimal(get_cell_by_key_in_range(row, 'encargaduria_mensual', rango1_start, rango1_end)),
                 )
 
                 # AsignacionesQuincenales
                 aq = AsignacionesQuincenales.objects.create(
                     quincena=quincena_obj,
-                    sueldo_base_quincenal=parse_decimal(get_cell_by_key('sueldo_base_quincenal')),
-                    prima_de_antiguedad_quincenal=parse_decimal(get_cell_by_key('prima_de_antiguedad_quincenal')),
-                    prima_de_profesionalizacion_quincenal=parse_decimal(get_cell_by_key('prima_de_profesionalizacion_quincenal')),
-                    prima_por_hijos_quincenal=parse_decimal(get_cell_by_key('prima_por_hijos_quincenal')),
-                    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_quincenal=parse_decimal(get_cell_by_key('contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_quincenal')),
-                    complemento_del_salario_quincenal=parse_decimal(get_cell_by_key('complemento_del_salario_quincenal')),
-                    becas_para_hijos_quincenal=parse_decimal(get_cell_by_key('becas_para_hijos_quincenal')),
-                    prima_asistencial_y_del_hogar_quincenal=parse_decimal(get_cell_by_key('prima_asistencial_y_del_hogar_quincenal')),
-                    prima_trabajadores_adm_y_obr_quincenal=parse_decimal(get_cell_by_key('prima_trabajadores_adm_y_obr_quincenal')),
-                    encargaduria_quincenal=parse_decimal(get_cell_by_key('encargaduria_quincenal')),
-                    diferencia_por_comisiones_de_servicios=parse_decimal(get_cell_by_key('diferencia_por_comisiones_de_servicios')),
-                    retroactivo_sueldo_base=parse_decimal(get_cell_by_key('retroactivo_sueldo_base')),
-                    retroactivo_prima_de_antiguedad=parse_decimal(get_cell_by_key('retroactivo_prima_de_antiguedad')),
-                    retroactivo_prima_de_profesionalizacion=parse_decimal(get_cell_by_key('retroactivo_prima_de_profesionalizacion')),
-                    retroactivo_prima_por_hijos=parse_decimal(get_cell_by_key('retroactivo_prima_por_hijos')),
-                    retroactivo_contribucion_para_trabajadoras_y_trabajadores_con_discapacidad=parse_decimal(get_cell_by_key('retroactivo_contribucion_para_trabajadoras_y_trabajadores_con_discapacidad')),
-                    retroactivo_horas_extras=parse_decimal(get_cell_by_key('retroactivo_horas_extras')),
-                    retroactivo_becas_para_hijos=parse_decimal(get_cell_by_key('retroactivo_becas_para_hijos')),
-                    retroactivo_prima_asistencial_y_del_hogar=parse_decimal(get_cell_by_key('retroactivo_prima_asistencial_y_del_hogar')),
-                    retroactivo_prima_trabajadores_adm_y_obr=parse_decimal(get_cell_by_key('retroactivo_prima_trabajadores_adm_y_obr')),
-                    retroactivo_encargaduria=parse_decimal(get_cell_by_key('retroactivo_encargaduria')),
+                    sueldo_base_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'sueldo_base_quincenal', rango2_start, rango2_end)),
+                    prima_de_antiguedad_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'prima_de_antiguedad_quincenal', rango2_start, rango2_end)),
+                    prima_de_profesionalizacion_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'prima_de_profesionalizacion_quincenal', rango2_start, rango2_end)),
+                    prima_por_hijos_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'prima_por_hijos_quincenal', rango2_start, rango2_end)),
+                    contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'contribucion_para_trabajadoras_y_trabajadores_con_discapacidad_quincenal', rango2_start, rango2_end)),
+                    complemento_del_salario_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'complemento_del_salario_quincenal', rango2_start, rango2_end)),
+                    becas_para_hijos_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'becas_para_hijos_quincenal', rango2_start, rango2_end)),
+                    prima_asistencial_y_del_hogar_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'prima_asistencial_y_del_hogar_quincenal', rango2_start, rango2_end)),
+                    prima_trabajadores_adm_y_obr_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'prima_trabajadores_adm_y_obr_quincenal', rango2_start, rango2_end)),
+                    encargaduria_quincenal=parse_decimal(get_cell_by_key_in_range(row, 'encargaduria_quincenal', rango2_start, rango2_end)),
+                    diferencia_por_comisiones_de_servicios=parse_decimal(get_cell_by_key_in_range(row, 'diferencia_por_comisiones_de_servicios', rango2_start, rango2_end)),
+                    retroactivo_sueldo_base=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_sueldo_base', rango2_start, rango2_end)),
+                    retroactivo_prima_de_antiguedad=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_prima_de_antiguedad', rango2_start, rango2_end)),
+                    retroactivo_prima_de_profesionalizacion=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_prima_de_profesionalizacion', rango2_start, rango2_end)),
+                    retroactivo_prima_por_hijos=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_prima_por_hijos', rango2_start, rango2_end)),
+                    retroactivo_contribucion_para_trabajadoras_y_trabajadores_con_discapacidad=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_contribucion_para_trabajadoras_y_trabajadores_con_discapacidad', rango2_start, rango2_end)),
+                    retroactivo_horas_extras=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_horas_extras', rango2_start, rango2_end)),
+                    retroactivo_becas_para_hijos=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_becas_para_hijos', rango2_start, rango2_end)),
+                    retroactivo_prima_asistencial_y_del_hogar=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_prima_asistencial_y_del_hogar', rango2_start, rango2_end)),
+                    retroactivo_prima_trabajadores_adm_y_obr=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_prima_trabajadores_adm_y_obr', rango2_start, rango2_end)),
+                    retroactivo_encargaduria=parse_decimal(get_cell_by_key_in_range(row, 'retroactivo_encargaduria', rango2_start, rango2_end)),
                 )
 
                 # Deducciones
                 ded = Deducciones.objects.create(
                     quincena=quincena_obj,
-                    retencion_por_caja_de_ahorro=parse_decimal(get_cell_by_key('retencion_por_caja_de_ahorro')),
-                    retencion_por_sso=parse_decimal(get_cell_by_key('retencion_por_sso')),
-                    retencion_rpe=parse_decimal(get_cell_by_key('retencion_rpe')),
-                    retencion_por_faov=parse_decimal(get_cell_by_key('retencion_por_faov')),
-                    retencion_por_fejp=parse_decimal(get_cell_by_key('retencion_por_fejp')),
-                    sinaep=parse_decimal(get_cell_by_key('sinaep')),
-                    ipasme=parse_decimal(get_cell_by_key('ipasme')),
-                    descuento_por_pago_indebido=parse_decimal(get_cell_by_key('descuento_por_pago_indebido')),
+                    retencion_por_caja_de_ahorro=parse_decimal(get_cell_by_key_in_range(row, 'retencion_por_caja_de_ahorro', rango3_start, rango3_end)),
+                    retencion_por_sso=parse_decimal(get_cell_by_key_in_range(row, 'retencion_por_sso', rango3_start, rango3_end)),
+                    retencion_rpe=parse_decimal(get_cell_by_key_in_range(row, 'retencion_rpe', rango3_start, rango3_end)),
+                    retencion_por_faov=parse_decimal(get_cell_by_key_in_range(row, 'retencion_por_faov', rango3_start, rango3_end)),
+                    retencion_por_fejp=parse_decimal(get_cell_by_key_in_range(row, 'retencion_por_fejp', rango3_start, rango3_end)),
+                    sinaep=parse_decimal(get_cell_by_key_in_range(row, 'sinaep', rango3_start, rango3_end)),
+                    ipasme=parse_decimal(get_cell_by_key_in_range(row, 'ipasme', rango3_start, rango3_end)),
+                    descuento_por_pago_indebido=parse_decimal(get_cell_by_key_in_range(row, 'descuento_por_pago_indebido', rango3_start, rango3_end)),
                 )
 
                 # -------------------------
